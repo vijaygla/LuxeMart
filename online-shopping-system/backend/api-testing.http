@@ -1,0 +1,271 @@
+### ====================================================================
+### LUXEMART E-COMMERCE API TESTING SUITE
+### Base URL: http://localhost:8000/api/v1
+### ====================================================================
+
+@baseUrl = http://localhost:8000/api/v1
+@adminEmail = vijaykumar@gmail.com
+@adminPassword = VijayKumar@12345
+
+### 1. Health Check
+GET {{baseUrl}}/health HTTP/1.1
+
+### ====================================================================
+### AUTHENTICATION & USERS
+### ====================================================================
+
+### 2. Admin Login (Vijay Kumar)
+# @name adminLogin
+POST {{baseUrl}}/user/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "vijaykumar@gmail.com",
+  "password": "VijayKumar@12345"
+}
+
+### Store Admin Token
+@adminToken = {{adminLogin.response.body.access_token}}
+
+### 3. Customer Login (Rohan Verma)
+# @name customerLogin
+POST {{baseUrl}}/user/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "rohan@example.com",
+  "password": "Rohan@12345"
+}
+
+### Store Customer Token
+@customerToken = {{customerLogin.response.body.access_token}}
+
+### 4. Register New User
+POST {{baseUrl}}/user/register HTTP/1.1
+Content-Type: application/json
+
+{
+  "name": "Priya Sharma",
+  "email": "priya.sharma@example.com",
+  "password": "Priya@123456",
+  "role": "Customer"
+}
+
+### 5. Get Current User Profile (Admin)
+GET {{baseUrl}}/user/me HTTP/1.1
+Authorization: Bearer {{adminToken}}
+
+### 6. Get Current User Profile (Customer)
+GET {{baseUrl}}/user/me HTTP/1.1
+Authorization: Bearer {{customerToken}}
+
+### ====================================================================
+### CATALOG & PRODUCTS
+### ====================================================================
+
+### 7. Get All Active Categories
+GET {{baseUrl}}/catalog/categories HTTP/1.1
+
+### 8. List Products (Default, Paginated)
+GET {{baseUrl}}/catalog/products?page=1&page_size=12 HTTP/1.1
+
+### 9. Filter Products by Category & Price & Sort
+GET {{baseUrl}}/catalog/products?category_id=1&min_price=100&max_price=3000&sort_by=price_desc HTTP/1.1
+
+### 10. Search Products by Keyword
+GET {{baseUrl}}/catalog/products?search=Sony HTTP/1.1
+
+### 11. Get Single Product by ID (Sony Headphones)
+GET {{baseUrl}}/catalog/products/1 HTTP/1.1
+
+### 12. Add Review to Product (Customer Auth)
+POST {{baseUrl}}/catalog/products/1/reviews HTTP/1.1
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "rating": 5,
+  "comment": "Unmatched audio quality and comfortable for 8+ hour work days!"
+}
+
+### ====================================================================
+### SHOPPING CART
+### ====================================================================
+
+### 13. Get Customer Cart
+GET {{baseUrl}}/cart HTTP/1.1
+Authorization: Bearer {{customerToken}}
+
+### 14. Add Item to Cart (Product ID 1 - Sony Headphones, Qty 1)
+POST {{baseUrl}}/cart/items HTTP/1.1
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "product_id": 1,
+  "quantity": 1
+}
+
+### 15. Add Another Item to Cart (Product ID 5 - Logitech Mouse, Qty 2)
+POST {{baseUrl}}/cart/items HTTP/1.1
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "product_id": 5,
+  "quantity": 2
+}
+
+### 16. Update Cart Item Quantity
+PUT {{baseUrl}}/cart/items/1 HTTP/1.1
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "quantity": 2
+}
+
+### ====================================================================
+### CHECKOUT & ORDERS
+### ====================================================================
+
+### 17. Checkout / Create Order from Cart
+# @name createOrder
+POST {{baseUrl}}/order/checkout HTTP/1.1
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "shipping_name": "Rohan Verma",
+  "shipping_address": "Flat 402, Signature Towers",
+  "shipping_city": "Mumbai",
+  "shipping_state": "Maharashtra",
+  "shipping_postal_code": "400001",
+  "shipping_phone": "+91 9988776655",
+  "payment_method": "Credit Card"
+}
+
+### Store Created Order ID
+@orderId = {{createOrder.response.body.id}}
+
+### 18. Process Simulated Payment for Created Order
+POST {{baseUrl}}/payment/process HTTP/1.1
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "order_id": {{orderId}},
+  "payment_method": "Credit Card",
+  "card_number": "4111222233334444",
+  "card_holder": "Rohan Verma",
+  "expiry": "12/28",
+  "cvv": "123"
+}
+
+### 19. Get Customer Orders (Order History)
+GET {{baseUrl}}/order/my-orders HTTP/1.1
+Authorization: Bearer {{customerToken}}
+
+### 20. Get Specific Order Details
+GET {{baseUrl}}/order/{{orderId}} HTTP/1.1
+Authorization: Bearer {{customerToken}}
+
+### ====================================================================
+### AI SHOPPING ASSISTANT (CAPGEMINI GENERATIVE ENGINE)
+### ====================================================================
+
+### 21. Get Available AI Models
+GET {{baseUrl}}/ai/models HTTP/1.1
+
+### 22. AI Chat using 'openai.gpt-5'
+POST {{baseUrl}}/ai/chat HTTP/1.1
+Content-Type: application/json
+
+{
+  "message": "Can you recommend a premium noise cancelling headphone from your catalog?",
+  "model_name": "openai.gpt-5"
+}
+
+### 23. AI Chat using 'phi-4-mini-reasoning'
+POST {{baseUrl}}/ai/chat HTTP/1.1
+Content-Type: application/json
+
+{
+  "message": "What is the return policy and do you have any espresso machines?",
+  "model_name": "phi-4-mini-reasoning"
+}
+
+### 24. AI Chat using 'us.anthropic.claude-sonnet-4-5-20250929-v1:0'
+POST {{baseUrl}}/ai/chat HTTP/1.1
+Content-Type: application/json
+
+{
+  "message": "Which luxury watches do you have in stock?",
+  "model_name": "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+}
+
+### 25. AI Chat using 'mistral.mistral-7b-instruct-v0:2'
+POST {{baseUrl}}/ai/chat HTTP/1.1
+Content-Type: application/json
+
+{
+  "message": "Hello, what items do you have for health and fitness?",
+  "model_name": "mistral.mistral-7b-instruct-v0:2"
+}
+
+### ====================================================================
+### ADMIN DASHBOARD & MANAGEMENT (ADMIN ONLY)
+### ====================================================================
+
+### 26. Get Admin Dashboard KPIs & Analytics
+GET {{baseUrl}}/admin/stats HTTP/1.1
+Authorization: Bearer {{adminToken}}
+
+### 27. Admin: View All Store Orders
+GET {{baseUrl}}/order/all HTTP/1.1
+Authorization: Bearer {{adminToken}}
+
+### 28. Admin: Update Order Status (Mark as Shipped)
+PUT {{baseUrl}}/order/1/status HTTP/1.1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "Shipped",
+  "payment_status": "Paid"
+}
+
+### 29. Admin: Create New Product
+POST {{baseUrl}}/catalog/products HTTP/1.1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Bose QuietComfort Ultra Earbuds",
+  "slug": "bose-qc-ultra-earbuds",
+  "description": "Spatialized audio, world-class noise cancellation, and CustomTune technology that shapes sound to fit your ear shape.",
+  "price": 299.00,
+  "discount_price": 249.00,
+  "category_id": 1,
+  "stock_quantity": 30,
+  "sku": "ELEC-BOS-007",
+  "image_url": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800&q=80",
+  "rating": 4.9,
+  "review_count": 18,
+  "is_featured": true,
+  "specs_json": "{\"Battery\": \"6 Hours\", \"Water Resistance\": \"IPX4\", \"Noise Cancelling\": \"Active CustomTune\"}"
+}
+
+### 30. Admin: Update Product Details
+PUT {{baseUrl}}/catalog/products/1 HTTP/1.1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "stock_quantity": 50,
+  "discount_price": 329.00
+}
+
+### 31. Admin: List All Users
+GET {{baseUrl}}/user/users HTTP/1.1
+Authorization: Bearer {{adminToken}}
